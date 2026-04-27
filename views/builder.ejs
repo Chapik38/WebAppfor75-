@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/theme.css" />
+  </head>
+  <body>
+    <div id="builderApp">
+      <header class="market-header">
+        <div class="market-left">
+          <span class="logo">PC CONFIG</span>
+          <a href="/builder" class="active">Конфигуратор</a>
+          <a href="/analyzer">Улучшение ПК</a>
+        </div>
+        <div class="market-right">
+          <button class="ghost small" @click="showWizard = true">Гайд</button>
+          <button class="ghost small" @click="logout">Выйти</button>
+        </div>
+      </header>
+
+      <main class="dns-layout">
+        <section class="catalog panel-light">
+          <h1>Конфигуратор ПК</h1>
+          <div class="row-head">
+            <strong>Обязательные комплектующие</strong>
+            <span>{{ selectedCount }}/{{ categories.length }}</span>
+          </div>
+
+          <div class="config-row" v-for="category in categories" :key="category">
+            <div class="row-name">
+              <span class="icon">{{ categoryIcon[category] }}</span>
+              <div>
+                <div>{{ categoryLabels[category] }}</div>
+                <small v-if="selectedItem(category)">{{ selectedItem(category).name }}</small>
+              </div>
+            </div>
+            <div class="row-actions">
+              <span class="status" :class="{ ok: !!selected[category] }">{{ selected[category] ? 'Совместимо' : 'Обязательно' }}</span>
+              <button class="small" @click="openPicker(category)">{{ selected[category] ? 'Изменить' : 'Добавить' }}</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="summary panel-light">
+          <h3>Сборка</h3>
+          <p class="muted">{{ selectedCount }} товар(ов) в сборке</p>
+          <div class="price-block">{{ formatMoney(totalPrice) }}</div>
+          <div class="cart-box">
+            <h4>Корзина</h4>
+            <div class="cart-item" v-for="item in cartItems" :key="item.id">
+              <img class="picker-thumb" :src="itemThumb(item)" alt="component" />
+              <div>
+                <strong>{{ item.name }}</strong>
+                <small class="muted">{{ formatMoney(estimatePrice(item)) }}</small>
+              </div>
+              <button class="ghost small" @click="removeFromCart(item.category)">✕</button>
+            </div>
+          </div>
+          <div class="service-box">
+            <strong>Сервис сборки: 2 999 ₽</strong>
+            <small class="muted">Наступила для текущей сборки</small>
+          </div>
+          <button>Перейти к оформлению</button>
+          <button @click="validateBuild">Проверить совместимость</button>
+          <button class="ghost" @click="saveConfig">Сохранить</button>
+          <button class="ghost" @click="clearAll">Очистить</button>
+          <p class="message" :class="statusClass" v-if="statusText">{{ statusText }}</p>
+        </aside>
+      </main>
+
+      <section class="saved panel-light">
+        <div class="saved-top">
+          <h3>Сохраненные конфигурации</h3>
+          <button class="ghost small" @click="loadSaved">Обновить</button>
+        </div>
+        <div class="saved-cards">
+          <article class="saved-card" v-for="cfg in savedConfigs" :key="cfg.id">
+            <div class="saved-card-top">
+              <strong>{{ cfg.title }}</strong>
+              <div class="row-actions">
+                <button class="ghost small" @click="editConfig(cfg)">Редактировать</button>
+                <button class="ghost small danger" @click="deleteConfig(cfg.id)">Удалить</button>
+              </div>
+            </div>
+            <div class="saved-tags">
+              <span class="saved-tag" v-for="(componentId, category) in cfg.config_json" :key="`${cfg.id}-${category}`">
+                {{ category }}: {{ componentNameById(componentId) }}
+              </span>
+            </div>
+            <div class="saved-card-bottom">
+              <button class="small" @click="applyConfig(cfg)">Загрузить в сборку</button>
+            </div>
+          </article>
+          <p class="muted" v-if="!savedConfigs.length">Пока нет сохраненных конфигураций.</p>
+        </div>
+      </section>
+
+      <div class="picker-backdrop" v-if="pickerOpen" @click.self="pickerOpen = false">
+        <section class="picker-modal">
+          <div class="picker-top">
+            <h3>{{ categoryLabels[pickerCategory] }}</h3>
+            <button class="ghost small" @click="pickerOpen = false">✕</button>
+          </div>
+          <input v-model.trim="pickerSearch" placeholder="Поиск по названию" />
+          <div class="chips">
+            <button class="chip-btn" :class="{ active: pickerTag === '' }" @click="pickerTag = ''">Все</button>
+            <button
+              class="chip-btn"
+              v-for="tag in pickerFilters"
+              :key="tag"
+              :class="{ active: pickerTag === tag }"
+              @click="pickerTag = tag"
+            >
+              {{ tag }}
+            </button>
+          </div>
+          <div class="picker-list">
+            <article class="picker-item" v-for="item in pickerItems" :key="item.id">
+              <img class="picker-thumb" :src="itemThumb(item)" alt="component" />
+              <div>
+                <strong>{{ item.name }}</strong>
+                <p class="muted">Score {{ item.perf_score || 0 }}</p>
+              </div>
+              <div class="row-actions">
+                <span>{{ formatMoney(estimatePrice(item)) }}</span>
+                <button
+                  class="ghost small"
+                  :class="{ active: isFavorite(item.id) }"
+                  @click="toggleFavorite(item.id)"
+                >
+                  Избранное
+                </button>
+                <button
+                  class="ghost small"
+                  :class="{ active: inCompare(item.id) }"
+                  @click="toggleCompare(item.id)"
+                >
+                  Сравнить
+                </button>
+                <button class="small" @click="pick(pickerCategory, item.id)">Добавить</button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <div class="wizard-backdrop" v-if="showWizard">
+        <section class="wizard">
+          <div class="wizard-head">
+            <h3>Быстрый старт</h3>
+            <span>Шаг {{ wizardStep }}/3</span>
+          </div>
+          <div class="wizard-body" v-if="wizardStep === 1"><p>Нажимай «Добавить» напротив нужной категории.</p></div>
+          <div class="wizard-body" v-else-if="wizardStep === 2"><p>В окне выбора используй поиск и фильтры, затем выбери товар.</p></div>
+          <div class="wizard-body" v-else><p>Проверь совместимость и сохрани готовую сборку.</p></div>
+          <div class="wizard-actions">
+            <button class="ghost" @click="closeWizard">Пропустить</button>
+            <button v-if="wizardStep < 3" @click="wizardStep += 1">Далее</button>
+            <button v-else @click="closeWizard">Готово</button>
+          </div>
+        </section>
+      </div>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/js/vue-builder.js"></script>
+  </body>
+</html>

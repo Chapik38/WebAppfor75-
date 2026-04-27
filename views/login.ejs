@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/theme.css" />
+  </head>
+  <body class="auth-body">
+    <div id="authApp" class="auth-shell">
+      <section class="auth-card">
+        <h1>Добро пожаловать</h1>
+        <p class="muted">Войди в аккаунт, чтобы собрать идеальный ПК.</p>
+        <form @submit.prevent="login">
+          <input v-model.trim="form.email" type="email" placeholder="Email" required />
+          <input v-model="form.password" type="password" placeholder="Пароль" required minlength="8" />
+          <button type="submit" :disabled="loading">{{ loading ? 'Входим...' : 'Войти' }}</button>
+        </form>
+        <p class="message error" v-if="error">{{ error }}</p>
+        <p class="muted center">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+      </section>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/js/vue-login.js"></script>
+  </body>
+</html>

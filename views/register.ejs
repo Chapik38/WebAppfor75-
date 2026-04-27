@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/theme.css" />
+  </head>
+  <body class="auth-body">
+    <div id="registerApp" class="auth-shell">
+      <section class="auth-card">
+        <h1>Создать аккаунт</h1>
+        <p class="muted">Регистрация занимает меньше минуты.</p>
+        <form @submit.prevent="register">
+          <input v-model.trim="form.username" type="text" placeholder="Имя пользователя" required minlength="3" />
+          <input v-model.trim="form.email" type="email" placeholder="Email" required />
+          <input v-model="form.password" type="password" placeholder="Пароль (минимум 8 символов)" required minlength="8" />
+          <button type="submit" :disabled="loading">{{ loading ? 'Создаем...' : 'Зарегистрироваться' }}</button>
+        </form>
+        <p class="message error" v-if="error">{{ error }}</p>
+        <p class="muted center">Уже есть аккаунт? <a href="/login">Войти</a></p>
+      </section>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/js/vue-register.js"></script>
+  </body>
+</html>
